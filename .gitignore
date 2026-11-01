@@ -1,1 +1,29 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Temporary download directories and media files
+tmp/
+temp_downloads/
+*.mp4
+*.mkv
+*.webm
+*.part
+*.ytdl
+*.jpg
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
 
