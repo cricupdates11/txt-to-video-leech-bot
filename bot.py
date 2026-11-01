@@ -1,7 +1,11 @@
 import asyncio
 import html
 import logging
+import os
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Dict
+
 
 from telegram import Message, Update
 from telegram.constants import ChatAction, ParseMode
@@ -506,9 +510,34 @@ async def post_stop(application: Application) -> None:
     if qm:
         await qm.stop_workers()
 
+class _HealthCheckHandler(BaseHTTPRequestHandler):
+    """Minimal HTTP handler so Render Web Services detect an open port."""
+    def do_GET(self) -> None:
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"OK - TXT Leech Bot is running.")
+
+    def log_message(self, format: str, *args: object) -> None:
+        # Suppress HTTP access logs to keep Render logs clean
+        return
+
+
+def start_dummy_http_server() -> None:
+    """Bind to Render's PORT environment variable if present."""
+    port_str = os.getenv("PORT")
+    if not port_str:
+        return
+    port = int(port_str)
+    server = HTTPServer(("0.0.0.0", port), _HealthCheckHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    logger.info("Health-check HTTP server listening on 0.0.0.0:%d", port)
 
 def main() -> None:
     """Build and run the Telegram Bot Application."""
+    start_dummy_http_server()
+
     application = (
         ApplicationBuilder()
         .token(config.bot_token)
@@ -516,6 +545,8 @@ def main() -> None:
         .post_stop(post_stop)
         .build()
     )
+    # ... keep the rest of main() exactly the same
+
 
     # User Commands
     application.add_handler(CommandHandler("start", start_command))
